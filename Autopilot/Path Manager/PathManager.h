@@ -66,6 +66,7 @@ void checkAMData(void);
 char getWaypointChecksum(void);
 char generatePMDataDMAChecksum(void);
 float getDistance(long double lat1, long double lon1, long double lat2, long double lon2);
+float* getWindVelocity(float groundSpeed, float gpsHeading, float airspeed, float magHeading);
 
 
 #endif	/* PATHMANGER_H */

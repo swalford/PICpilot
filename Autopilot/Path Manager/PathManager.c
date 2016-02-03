@@ -17,7 +17,8 @@
 #if DEBUG
 #include <stdio.h>
 #include <stdlib.h>
-#include "UART1.h"
+//#include "UART1.h"
+#include "../Common/UART1.h"
 #endif
 
 extern GPSData gpsData;
@@ -44,6 +45,8 @@ char pathCount = 0;
 
 int lastKnownHeadingHome = 10;
 char returnHome = 0;
+
+float* getWindVelocity(float groundSpeed, float gpsHeading, float airspeed, float magHeading);
 
 void pathManagerInit(void) {
 #if DEBUG
@@ -132,6 +135,8 @@ void pathManagerRuntime(void) {
 //    UART1_SendString(&str);
 #endif
     copyGPSData();
+    
+        getWindVelocity(gpsData.speed, gpsData.heading, 0, 0);
 
     if (returnHome){
         pmData.targetWaypoint = -1;
@@ -599,5 +604,34 @@ char getWaypointChecksum(void){
         checksum ^= (char)(path[i]->latitude + path[i]->longitude + path[i]->altitude + path[i]->radius) & 0xFF;
     }
     return checksum;
+}
+
+//Returns pointer to array containing wind velocity in x- and y-directions and 
+//wind velocity 
+float* getWindVelocity(float groundSpeed, float gpsHeading, float airspeed, float magHeading)
+{
+    float windVX = groundSpeed * (sin(gpsHeading) - airspeed * (sin(gpsHeading)));
+    float windVY = groundSpeed * (cos(gpsHeading) - airspeed * (cos(gpsHeading)));
+    float theta = atan(windVY / windVX);
+    float windVH = 0; //wind velocity heading
+    
+    if (windVX > 0 && windVY > 0)
+        windVH = PI / 180.0 - theta;
+    else if (windVX < 0 && windVY > 0)
+        windVH = deg2rad(270) + theta; 
+    else if (windVX > 0 && windVY < 0)
+        windVH = PI / 180.0 + theta;
+    else
+        windVH = deg2rad(270) - theta;
+    char str[20];
+    sprintf(&str, "%f", gpsData.time);
+    debug(&str);
+    
+    /*windVelocity array contains wind velocity in x-direction, wind velocity in
+    y-direction, and wind velocity heading
+     */
+    float windVelocity[3] = {windVX, windVY, windVH};
+    
+    return windVelocity;    
 }
 
